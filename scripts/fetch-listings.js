@@ -5,9 +5,38 @@ const API_KEY = process.env.RENTCAST_API_KEY;
 const LAT = 33.5030;
 const LON = -82.0199;
 const RADIUS = 5;
+// Houses only - excludes raw land parcels, which otherwise dominate results
+// near a city center and blow past the API's 500-result cap.
+const PROPERTY_TYPES = ['Single Family', 'Condo', 'Townhouse', 'Manufactured', 'Multi-Family'];
 
 const DATA_PATH = path.join(__dirname, '..', 'data.json');
 const SEEN_PATH = path.join(__dirname, '..', 'seen-ids.json');
+
+async function fetchPage(offset) {
+  const params = new URLSearchParams({
+    latitude: String(LAT),
+    longitude: String(LON),
+    radius: String(RADIUS),
+    status: 'Active',
+    limit: '500',
+    offset: String(offset),
+    includeTotalCount: 'true'
+  });
+  PROPERTY_TYPES.forEach(t => params.append('propertyType', t));
+
+  const res = await fetch(`https://api.rentcast.io/v1/listings/sale?${params.toString()}`, {
+    headers: { 'X-Api-Key': API_KEY, 'Accept': 'application/json' }
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`RentCast API error: ${res.status} ${res.statusText}\n${body}`);
+  }
+
+  const totalCount = Number(res.headers.get('x-total-count') || '0');
+  const page = await res.json();
+  return { page, totalCount };
+}
 
 async function main() {
   if (!API_KEY) {
@@ -15,18 +44,16 @@ async function main() {
     process.exit(1);
   }
 
-  const url = `https://api.rentcast.io/v1/listings/sale?latitude=${LAT}&longitude=${LON}&radius=${RADIUS}&status=Active&limit=500`;
-  const res = await fetch(url, {
-    headers: { 'X-Api-Key': API_KEY, 'Accept': 'application/json' }
-  });
+  const { page: firstPage, totalCount } = await fetchPage(0);
+  let listings = firstPage;
 
-  if (!res.ok) {
-    const body = await res.text();
-    console.error(`RentCast API error: ${res.status} ${res.statusText}\n${body}`);
-    process.exit(1);
+  // Paginate if there's more, but cap at 2 calls total per run to stay
+  // comfortably within the free-tier monthly quota on a daily schedule.
+  if (totalCount > listings.length && listings.length === 500) {
+    console.log(`Total available: ${totalCount}, fetching one more page...`);
+    const { page: secondPage } = await fetchPage(500);
+    listings = listings.concat(secondPage);
   }
-
-  const listings = await res.json();
 
   let seen = [];
   let isFirstRun = true;
@@ -64,6 +91,7 @@ async function main() {
     lastUpdated: new Date().toISOString(),
     center: { lat: LAT, lon: LON, label: 'Augusta National Golf Club' },
     radiusMiles: RADIUS,
+    totalAvailable: totalCount,
     count: enriched.length,
     newCount: enriched.filter(l => l.isNew).length,
     listings: enriched
@@ -72,7 +100,7 @@ async function main() {
   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
   fs.writeFileSync(SEEN_PATH, JSON.stringify(currentIds, null, 2));
 
-  console.log(`Updated ${enriched.length} listings, ${data.newCount} new since last check.`);
+  console.log(`Updated ${enriched.length} of ${totalCount} total listings, ${data.newCount} new since last check.`);
 }
 
 main().catch(err => {
