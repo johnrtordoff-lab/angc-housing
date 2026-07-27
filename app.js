@@ -1,13 +1,26 @@
-async function load() {
+const SOURCES = {
+  houses: './data.json',
+  land: './land.json'
+};
+
+const cache = {};
+let activeTab = 'houses';
+
+async function loadTab(tab) {
   const root = document.getElementById('root');
   const updatedEl = document.getElementById('updated');
   const countEl = document.getElementById('count-total');
   const newEl = document.getElementById('count-new');
 
+  root.innerHTML = '<div class="empty">Loading&hellip;</div>';
+
   try {
-    const res = await fetch('./data.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('No data yet');
-    const data = await res.json();
+    if (!cache[tab]) {
+      const res = await fetch(SOURCES[tab], { cache: 'no-store' });
+      if (!res.ok) throw new Error('No data yet');
+      cache[tab] = await res.json();
+    }
+    const data = cache[tab];
 
     const updated = new Date(data.lastUpdated);
     updatedEl.textContent = 'Updated ' + updated.toLocaleString('en-US', {
@@ -22,22 +35,31 @@ async function load() {
 
     root.innerHTML = '';
 
+    if (data.truncated) {
+      const note = document.createElement('div');
+      note.className = 'truncated-note';
+      note.textContent = `Showing ${data.count} of ${data.totalAvailable} available — the free API tier caps how many we can pull per check.`;
+      root.appendChild(note);
+    }
+
     if (listings.length === 0) {
-      root.innerHTML = '<div class="empty">No active listings found within 5 miles right now.</div>';
+      root.innerHTML += '<div class="empty">No active listings found within 5 miles right now.</div>';
       return;
     }
 
     if (newOnes.length > 0) {
       root.appendChild(sectionTitle('New Since Last Check'));
-      newOnes.forEach(l => root.appendChild(card(l)));
+      newOnes.forEach(l => root.appendChild(card(l, tab)));
     }
 
-    root.appendChild(sectionTitle('All Active Listings (' + rest.length + (newOnes.length ? ' more' : '') + ')'));
-    rest.forEach(l => root.appendChild(card(l)));
+    root.appendChild(sectionTitle('All Active (' + rest.length + (newOnes.length ? ' more' : '') + ')'));
+    rest.forEach(l => root.appendChild(card(l, tab)));
 
   } catch (err) {
-    root.innerHTML = '<div class="error">Couldn\'t load listings yet. The first update runs on the daily schedule, or trigger it manually from the GitHub Actions tab.</div>';
+    root.innerHTML = '<div class="error">Couldn\'t load this yet. The first update runs on the daily/weekly schedule, or trigger it manually from the GitHub Actions tab.</div>';
     updatedEl.textContent = '';
+    countEl.textContent = '–';
+    newEl.textContent = '–';
   }
 }
 
@@ -48,15 +70,20 @@ function sectionTitle(text) {
   return div;
 }
 
-function card(l) {
+function card(l, tab) {
   const div = document.createElement('div');
   div.className = 'card' + (l.isNew ? ' is-new' : '');
 
   const price = l.price ? '$' + l.price.toLocaleString('en-US') : 'Price N/A';
   const meta = [];
-  if (l.bedrooms != null) meta.push(l.bedrooms + ' bd');
-  if (l.bathrooms != null) meta.push(l.bathrooms + ' ba');
-  if (l.sqft) meta.push(l.sqft.toLocaleString('en-US') + ' sqft');
+
+  if (tab === 'land') {
+    if (l.lotSize) meta.push(l.lotSize.toLocaleString('en-US') + ' sqft lot');
+  } else {
+    if (l.bedrooms != null) meta.push(l.bedrooms + ' bd');
+    if (l.bathrooms != null) meta.push(l.bathrooms + ' ba');
+    if (l.sqft) meta.push(l.sqft.toLocaleString('en-US') + ' sqft');
+  }
   if (l.propertyType) meta.push(l.propertyType);
   if (l.distanceMiles != null) meta.push(l.distanceMiles + ' mi from ANGC');
   if (l.daysOnMarket != null) meta.push(l.daysOnMarket + 'd on market');
@@ -75,4 +102,13 @@ function card(l) {
   return div;
 }
 
-load();
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    loadTab(activeTab);
+  });
+});
+
+loadTab(activeTab);

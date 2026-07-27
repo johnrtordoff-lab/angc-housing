@@ -1,8 +1,8 @@
-name: Update Listings
+name: Update Land
 
 on:
   schedule:
-    - cron: '0 11 * * *'   # ~7am US Eastern
+    - cron: '15 11 * * 0'   # weekly, Sundays ~7am US Eastern
   workflow_dispatch: {}
 
 permissions:
@@ -13,20 +13,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Fetch listings
+      - name: Fetch land
         env:
           RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
-        run: node scripts/fetch-listings.js
-
+        run: node scripts/fetch-land.js
       - name: Commit and push if changed
         run: |
           git config user.name "angc-housing-bot"
           git config user.email "actions@github.com"
-          git add data.json seen-ids.json
-          git diff --quiet --cached || git commit -m "Update listings $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git pull --rebase
+          git add land.json seen-land-ids.json
+          git diff --quiet --cached || git commit -m "Update land $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git push

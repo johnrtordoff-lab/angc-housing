@@ -151,3 +151,36 @@ footer {
   font-size: 11px;
   padding: 20px;
 }
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tab {
+  flex: 1;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--green);
+}
+
+.truncated-note {
+  background: #fff6e0;
+  color: #7a5c00;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
