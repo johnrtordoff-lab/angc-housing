@@ -16,7 +16,7 @@ function distanceMiles(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
-async function fetchPage(apiKey, propertyTypes, offset) {
+async function fetchPage(apiKey, propertyTypes, offset, minPrice) {
   const params = new URLSearchParams({
     latitude: String(LAT),
     longitude: String(LON),
@@ -27,6 +27,9 @@ async function fetchPage(apiKey, propertyTypes, offset) {
     includeTotalCount: 'true'
   });
   propertyTypes.forEach(t => params.append('propertyType', t));
+  if (minPrice != null) {
+    params.append('price', `${minPrice}:*`);
+  }
 
   const res = await fetch(`https://api.rentcast.io/v1/listings/sale?${params.toString()}`, {
     headers: { 'X-Api-Key': apiKey, 'Accept': 'application/json' }
@@ -45,19 +48,19 @@ async function fetchPage(apiKey, propertyTypes, offset) {
 // Runs a full fetch + diff + write cycle for one category (houses or land).
 // `maxCalls` caps how many 500-result API pages this run will use, so total
 // monthly usage across all scheduled scripts stays inside the free tier.
-async function runFetch({ label, propertyTypes, maxCalls, dataPath, seenPath }) {
+async function runFetch({ label, propertyTypes, maxCalls, dataPath, seenPath, minPrice }) {
   const apiKey = process.env.RENTCAST_API_KEY;
   if (!apiKey) {
     console.error('Missing RENTCAST_API_KEY env var');
     process.exit(1);
   }
 
-  const { page: first, totalCount } = await fetchPage(apiKey, propertyTypes, 0);
+  const { page: first, totalCount } = await fetchPage(apiKey, propertyTypes, 0, minPrice);
   let raw = first;
   let callsUsed = 1;
 
   while (callsUsed < maxCalls && raw.length < totalCount && raw.length > 0 && raw.length % 500 === 0) {
-    const { page } = await fetchPage(apiKey, propertyTypes, raw.length);
+    const { page } = await fetchPage(apiKey, propertyTypes, raw.length, minPrice);
     raw = raw.concat(page);
     callsUsed += 1;
     if (page.length < 500) break;

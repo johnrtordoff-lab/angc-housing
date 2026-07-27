@@ -11,6 +11,11 @@ async function loadTab(tab) {
   const updatedEl = document.getElementById('updated');
   const countEl = document.getElementById('count-total');
   const newEl = document.getElementById('count-new');
+  const filterNoteEl = document.getElementById('filter-note');
+
+  filterNoteEl.textContent = tab === 'houses'
+    ? '$250,000+ \u00b7 single family, condo, townhouse, manufactured, multi-family'
+    : 'Vacant land & lots \u00b7 no price minimum';
 
   root.innerHTML = '<div class="empty">Loading&hellip;</div>';
 
