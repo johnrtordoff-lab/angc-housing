@@ -24,7 +24,7 @@ jobs:
         run: |
           git config user.name "angc-housing-bot"
           git config user.email "actions@github.com"
-          git pull --rebase
           git add land.json seen-land-ids.json
           git diff --quiet --cached || git commit -m "Update land $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git pull --rebase
           git push
