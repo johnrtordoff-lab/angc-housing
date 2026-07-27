@@ -58,6 +58,7 @@ function card(l) {
   if (l.bathrooms != null) meta.push(l.bathrooms + ' ba');
   if (l.sqft) meta.push(l.sqft.toLocaleString('en-US') + ' sqft');
   if (l.propertyType) meta.push(l.propertyType);
+  if (l.distanceMiles != null) meta.push(l.distanceMiles + ' mi from ANGC');
   if (l.daysOnMarket != null) meta.push(l.daysOnMarket + 'd on market');
 
   const mapQuery = encodeURIComponent(l.address || '');

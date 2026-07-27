@@ -12,6 +12,20 @@ const PROPERTY_TYPES = ['Single Family', 'Condo', 'Townhouse', 'Manufactured', '
 const DATA_PATH = path.join(__dirname, '..', 'data.json');
 const SEEN_PATH = path.join(__dirname, '..', 'seen-ids.json');
 
+// Haversine distance in miles. RentCast's own radius filter isn't always
+// exact, so we re-verify distance ourselves from the coordinates it returns
+// and drop anything outside the real radius (or missing coordinates).
+function distanceMiles(lat1, lon1, lat2, lon2) {
+  const R = 3958.8;
+  const toRad = d => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
 async function fetchPage(offset) {
   const params = new URLSearchParams({
     latitude: String(LAT),
@@ -47,12 +61,28 @@ async function main() {
   const { page: firstPage, totalCount } = await fetchPage(0);
   let listings = firstPage;
 
-  // Paginate if there's more, but cap at 2 calls total per run to stay
-  // comfortably within the free-tier monthly quota on a daily schedule.
   if (totalCount > listings.length && listings.length === 500) {
     console.log(`Total available: ${totalCount}, fetching one more page...`);
     const { page: secondPage } = await fetchPage(500);
     listings = listings.concat(secondPage);
+  }
+
+  const rawCount = listings.length;
+
+  // Hard distance filter - re-verify every listing is actually within
+  // RADIUS miles of the course, dropping anything the API mis-included
+  // and anything missing coordinates entirely.
+  listings = listings
+    .map(l => {
+      if (l.latitude == null || l.longitude == null) return null;
+      const dist = distanceMiles(LAT, LON, l.latitude, l.longitude);
+      return dist <= RADIUS ? { ...l, __distance: dist } : null;
+    })
+    .filter(Boolean);
+
+  const droppedCount = rawCount - listings.length;
+  if (droppedCount > 0) {
+    console.log(`Dropped ${droppedCount} listing(s) outside ${RADIUS}mi after distance verification.`);
   }
 
   let seen = [];
@@ -79,6 +109,7 @@ async function main() {
     propertyType: l.propertyType,
     daysOnMarket: l.daysOnMarket,
     listedDate: l.listedDate,
+    distanceMiles: Math.round(l.__distance * 10) / 10,
     lat: l.latitude,
     lon: l.longitude,
     mlsName: l.mlsName || null,
@@ -100,7 +131,7 @@ async function main() {
   fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
   fs.writeFileSync(SEEN_PATH, JSON.stringify(currentIds, null, 2));
 
-  console.log(`Updated ${enriched.length} of ${totalCount} total listings, ${data.newCount} new since last check.`);
+  console.log(`Updated ${enriched.length} of ${totalCount} total listings (${droppedCount} dropped as out-of-radius), ${data.newCount} new since last check.`);
 }
 
 main().catch(err => {
