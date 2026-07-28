@@ -1,6 +1,6 @@
 # Augusta National Home Watch
 
-Installable mobile web app tracking active for-sale properties within 5 miles of
+Installable mobile web app tracking active for-sale properties within 3 miles of
 Augusta National Golf Club (33.5030, -82.0199), verified by hard distance check
 (not just relying on the API's own radius filter).
 

@@ -1,7 +1,7 @@
 {
   "name": "Augusta National Home Watch",
   "short_name": "ANGC Homes",
-  "description": "New homes for sale within 5 miles of Augusta National Golf Club",
+  "description": "New homes for sale within 3 miles of Augusta National Golf Club",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
