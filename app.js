@@ -53,7 +53,7 @@ async function loadTab(tab) {
     }
 
     if (newOnes.length > 0) {
-      root.appendChild(sectionTitle('New Since Last Check'));
+      root.appendChild(sectionTitle('✦ New Since Last Check', true));
       newOnes.forEach(l => root.appendChild(card(l, tab)));
     }
 
@@ -68,9 +68,9 @@ async function loadTab(tab) {
   }
 }
 
-function sectionTitle(text) {
+function sectionTitle(text, isNew) {
   const div = document.createElement('div');
-  div.className = 'section-title';
+  div.className = 'section-title' + (isNew ? ' new-title' : '');
   div.textContent = text;
   return div;
 }

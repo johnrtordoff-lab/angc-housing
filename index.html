@@ -13,25 +13,46 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" href="icons/icon-192.png">
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
+  <div class="hero-bg" aria-hidden="true"></div>
+
   <header>
-    <h1>Augusta National Home Watch</h1>
-    <div class="sub" id="updated">Loading&hellip;</div>
+    <div class="brand">
+      <svg class="pin" width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C7.6 2 4 5.6 4 10c0 6 8 12 8 12s8-6 8-12c0-4.4-3.6-8-8-8Z" fill="currentColor"/>
+        <circle cx="12" cy="10" r="3.2" fill="#0b3d2e"/>
+      </svg>
+      <div>
+        <h1>Augusta National<br>Home Watch</h1>
+        <div class="sub" id="updated">Loading&hellip;</div>
+      </div>
+    </div>
+
     <div class="stats">
       <div class="stat"><div class="num" id="count-total">&ndash;</div><div class="label">Active</div></div>
       <div class="stat"><div class="num" id="count-new">&ndash;</div><div class="label">New</div></div>
-      <div class="stat"><div class="num">5mi</div><div class="label">Radius</div></div>
+      <div class="stat"><div class="num">5<span class="unit">mi</span></div><div class="label">Radius</div></div>
     </div>
-    <div class="tabs">
-      <button class="tab active" data-tab="houses">Houses</button>
-      <button class="tab" data-tab="land">Land &amp; Lots</button>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="houses" role="tab" aria-selected="true">Houses</button>
+      <button class="tab" data-tab="land" role="tab" aria-selected="false">Land &amp; Lots</button>
     </div>
     <div class="filter-note" id="filter-note"></div>
   </header>
+
   <main id="root"></main>
-  <footer>For-sale listings within 5 miles of Augusta National Golf Club &middot; data via RentCast</footer>
+
+  <footer>
+    <span class="footer-dot">&#9679;</span> For-sale listings within 5 miles of Augusta National Golf Club &middot; data via RentCast
+  </footer>
+
   <script src="./app.js"></script>
 </body>
 </html>
