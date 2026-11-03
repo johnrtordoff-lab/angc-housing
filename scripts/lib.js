@@ -26,7 +26,8 @@ async function fetchPage(apiKey, propertyTypes, offset, minPrice) {
     offset: String(offset),
     includeTotalCount: 'true'
   });
-  propertyTypes.forEach(t => params.append('propertyType', t));
+  // RentCast expects multiple values pipe-separated, not repeated params.
+  params.append('propertyType', propertyTypes.join('|'));
   if (minPrice != null) {
     params.append('price', `${minPrice}:*`);
   }
