@@ -55,17 +55,31 @@ async function runFetch({ label, propertyTypes, maxCalls, dataPath, seenPath, mi
     process.exit(1);
   }
 
-  const { page: first, totalCount } = await fetchPage(apiKey, propertyTypes, 0, minPrice);
-  let raw = first;
+  let serverMinPrice = minPrice;
+  let first, totalCount;
   let callsUsed = 1;
+  try {
+    ({ page: first, totalCount } = await fetchPage(apiKey, propertyTypes, 0, serverMinPrice));
+  } catch (err) {
+    if (minPrice == null) throw err;
+    // The API rejected the price filter - log why, then fall back to fetching
+    // without it and filtering by price ourselves below.
+    console.error(`Fetch with price filter failed, retrying without it:\n${err.message}`);
+    serverMinPrice = null;
+    maxCalls = Math.max(maxCalls, 2);
+    callsUsed = 2;
+    ({ page: first, totalCount } = await fetchPage(apiKey, propertyTypes, 0, null));
+  }
+  let raw = first;
 
   while (callsUsed < maxCalls && raw.length < totalCount && raw.length > 0 && raw.length % 500 === 0) {
-    const { page } = await fetchPage(apiKey, propertyTypes, raw.length, minPrice);
+    const { page } = await fetchPage(apiKey, propertyTypes, raw.length, serverMinPrice);
     raw = raw.concat(page);
     callsUsed += 1;
     if (page.length < 500) break;
   }
 
+  if (minPrice != null) raw = raw.filter(l => (l.price || 0) >= minPrice);
   const rawCount = raw.length;
 
   // Hard distance filter - re-verify every listing is actually within
