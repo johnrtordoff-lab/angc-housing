@@ -48,7 +48,7 @@ async function loadTab(tab) {
     }
 
     if (listings.length === 0) {
-      root.innerHTML += '<div class="empty">No active listings found within 3 miles right now.</div>';
+      root.innerHTML += '<div class="empty">No active listings found within 1 mile right now.</div>';
       return;
     }
 

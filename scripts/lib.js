@@ -2,7 +2,7 @@ const fs = require('fs');
 
 const LAT = 33.5030;
 const LON = -82.0199;
-const RADIUS = 3;
+const RADIUS = 1;
 
 // Haversine distance in miles.
 function distanceMiles(lat1, lon1, lat2, lon2) {
